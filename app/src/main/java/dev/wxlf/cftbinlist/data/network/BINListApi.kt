@@ -8,6 +8,6 @@ import retrofit2.http.Path
 interface BINListApi {
 
     @Headers("Accept-Version: 3")
-    @GET("./{BIN}")
+    @GET("/{BIN}")
     suspend fun loadBINInfo(@Path("BIN") bin: String) : BINInfoEntity
 }
