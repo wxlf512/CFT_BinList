@@ -3,7 +3,7 @@ package dev.wxlf.cftbinlist.data.entities
 import com.google.gson.annotations.SerializedName
 
 
-data class Country (
+data class CountryEntity (
 
   @SerializedName("numeric"   ) var numeric   : String? = null,
   @SerializedName("alpha2"    ) var alpha2    : String? = null,
