@@ -17,16 +17,20 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow<MainScreenViewState>(MainScreenViewState.Loading)
+        MutableStateFlow<MainScreenViewState>(MainScreenViewState.LoadingBINInfo)
     val uiState: StateFlow<MainScreenViewState> = _uiState
 
     fun obtainEvent(event: MainScreenEvent) {
         when(event) {
             MainScreenEvent.ScreenShown -> {
-                _uiState.value = MainScreenViewState.Loading
+                /* Requests history */
+            }
+            is MainScreenEvent.LoadBINInfo -> {
+                _uiState.value = MainScreenViewState.LoadingBINInfo
+                val bin = event.bin.replace("[^0-9]".toRegex(), "")
                 viewModelScope.launch {
-                    val data = fetchBINInfoUseCase.execute("53051330")
-                    _uiState.emit(MainScreenViewState.Loaded(data))
+                    val data = fetchBINInfoUseCase.execute(bin)
+                    _uiState.emit(MainScreenViewState.LoadedBINInfo(data))
                 }
             }
         }
