@@ -2,6 +2,8 @@ package dev.wxlf.cftbinlist.presentation.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -9,6 +11,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
@@ -34,10 +37,15 @@ import dev.wxlf.cftbinlist.R
 import dev.wxlf.cftbinlist.data.entities.BINInfoEntity
 import dev.wxlf.cftbinlist.data.entities.BankEntity
 import dev.wxlf.cftbinlist.data.entities.CountryEntity
+import dev.wxlf.cftbinlist.data.entities.RequestEntity
+import dev.wxlf.cftbinlist.presentation.common.BinInfoViewState
 import dev.wxlf.cftbinlist.presentation.common.MainScreenEvent
 import dev.wxlf.cftbinlist.presentation.common.MainScreenViewState
 import dev.wxlf.cftbinlist.presentation.viewmodels.MainViewModel
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @OptIn(
@@ -47,29 +55,26 @@ import java.util.*
 @Composable
 fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
     val uiState by viewModel.uiState.collectAsState()
+    val binInfoState by viewModel.binInfoState.collectAsState()
+    val inputBin = remember { mutableStateOf("") }
     val bin = remember { mutableStateOf("") }
     val binInfoDialog = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val binInfo = remember { mutableStateOf(BINInfoEntity()) }
+    val history = remember { mutableStateListOf<RequestEntity>() }
     val bottomSheetScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    when (uiState) {
-        is MainScreenViewState.LoadedBINInfo -> {
-            binInfo.value = (uiState as MainScreenViewState.LoadedBINInfo).data
-        }
-        MainScreenViewState.LoadingBINInfo -> {}
-    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TextField(
             modifier = Modifier
-                .padding(horizontal = 56.dp, vertical = 16.dp)
+                .padding(start = 56.dp, end = 56.dp, top = 16.dp, bottom = 8.dp)
                 .height(56.dp),
-            value = bin.value,
+            value = inputBin.value,
             onValueChange = { input ->
-                bin.value = input
+                inputBin.value = input
             },
             label = { Text(text = "BIN") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
@@ -78,7 +83,7 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                     painterResource(id = R.drawable.ic_outline_cancel_24),
                     contentDescription = "Clear",
                     modifier = Modifier.clickable {
-                        bin.value = ""
+                        inputBin.value = ""
                     }
                 )
             },
@@ -89,19 +94,90 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
             keyboardActions = KeyboardActions(onSearch = {
                 keyboardController?.hide()
                 focusManager.clearFocus()
-                if (bin.value.isNotEmpty()) {
-                    viewModel.obtainEvent(MainScreenEvent.LoadBINInfo(bin.value))
+                if (inputBin.value.isNotEmpty()) {
+                    bin.value = inputBin.value
+                    viewModel.obtainEvent(MainScreenEvent.LoadBINInfo(inputBin.value))
                     bottomSheetScope.launch {
                         if (!binInfoDialog.isVisible) {
                             binInfoDialog.show()
                         }
+                        viewModel.obtainEvent(
+                            MainScreenEvent.AddRequest(
+                                RequestEntity(
+                                    bin = inputBin.value,
+                                    timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
+                                )
+                            )
+                        )
                     }
                 }
             })
         )
-        Divider(
-            modifier = Modifier.padding(horizontal = 26.dp)
-        )
+        Text("История запросов", fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+        when (uiState) {
+            is MainScreenViewState.LoadedHistory -> {
+                history.clear()
+                history.addAll((uiState as MainScreenViewState.LoadedHistory).history.reversed())
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(history.toList()) { requestEntity ->
+                        Divider(
+                            modifier = Modifier.padding(horizontal = 26.dp)
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    bin.value = requestEntity.bin
+                                    viewModel.obtainEvent(MainScreenEvent.LoadBINInfo(requestEntity.bin))
+                                    bottomSheetScope.launch {
+                                        if (!binInfoDialog.isVisible) {
+                                            binInfoDialog.show()
+                                        }
+                                    }
+                                }
+                                .padding(vertical = 16.dp, horizontal = 26.dp)
+                                ,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                requestEntity.bin,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val timestamp = Instant.parse(requestEntity.timestamp)
+                                    .atZone(ZoneId.systemDefault())
+                                Text("${timestamp.hour}:${timestamp.minute}\n${timestamp.dayOfMonth}/${timestamp.monthValue}/${timestamp.year}")
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete request",
+                                    modifier = Modifier
+                                        .padding(start = 16.dp)
+                                        .size(32.dp)
+                                        .clickable {
+                                            viewModel.obtainEvent(
+                                                MainScreenEvent.DeleteRequest(
+                                                    requestEntity
+                                                )
+                                            )
+                                        }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            MainScreenViewState.LoadingHistory -> {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
+        }
     }
 
     ModalBottomSheetLayout(
@@ -118,8 +194,9 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 8.dp)
                 )
-                when (uiState) {
-                    is MainScreenViewState.LoadedBINInfo -> {
+                when (binInfoState) {
+                    is BinInfoViewState.LoadedBINInfo -> {
+                        binInfo.value = (binInfoState as BinInfoViewState.LoadedBINInfo).data
                         Text(
                             bin.value,
                             modifier = Modifier
@@ -134,7 +211,7 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                         if (binInfo.value.country != null)
                             CountryInfo(countryInfo = binInfo.value.country!!)
                     }
-                    MainScreenViewState.LoadingBINInfo -> {
+                    BinInfoViewState.LoadingBINInfo -> {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .align(Alignment.CenterHorizontally)
@@ -152,7 +229,7 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
     }
 
     LaunchedEffect(key1 = Unit, block = {
-        viewModel.obtainEvent(MainScreenEvent.ScreenShown)
+        viewModel.obtainEvent(MainScreenEvent.LoadHistory)
     })
 }
 

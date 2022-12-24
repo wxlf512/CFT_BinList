@@ -1,8 +1,8 @@
 package dev.wxlf.cftbinlist.presentation.common
 
-import dev.wxlf.cftbinlist.data.entities.BINInfoEntity
+import dev.wxlf.cftbinlist.data.entities.RequestEntity
 
 sealed class MainScreenViewState {
-    object LoadingBINInfo : MainScreenViewState()
-    data class LoadedBINInfo(val data: BINInfoEntity) : MainScreenViewState()
+    object LoadingHistory : MainScreenViewState()
+    data class LoadedHistory(val history: List<RequestEntity>) : MainScreenViewState()
 }

@@ -4,13 +4,16 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import dev.wxlf.cftbinlist.data.BINInfoRepositoryImpl
-import dev.wxlf.cftbinlist.data.datasources.BINInfoLocalDataSource
+import dev.wxlf.cftbinlist.data.repositories.BINInfoRepositoryImpl
+import dev.wxlf.cftbinlist.data.datasources.RequestsLocalDataSource
 import dev.wxlf.cftbinlist.data.datasources.BINInfoRemoteDataSource
-import dev.wxlf.cftbinlist.data.datasources.local.RoomBINInfoDataSource
+import dev.wxlf.cftbinlist.data.datasources.local.RoomRequestsDataSource
+import dev.wxlf.cftbinlist.data.datasources.local.room.RequestsDatabase
 import dev.wxlf.cftbinlist.data.datasources.remote.RetrofitBINInfoDataSource
 import dev.wxlf.cftbinlist.data.network.BINListApi
-import dev.wxlf.cftbinlist.domain.BINInfoRepository
+import dev.wxlf.cftbinlist.data.repositories.RequestsRepositoryImpl
+import dev.wxlf.cftbinlist.domain.repositories.BINInfoRepository
+import dev.wxlf.cftbinlist.domain.repositories.RequestsRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -21,12 +24,16 @@ class DataModule {
         RetrofitBINInfoDataSource(binListApi)
 
     @Provides
-    fun provideRoomDataSource(): BINInfoLocalDataSource =
-        RoomBINInfoDataSource()
+    fun provideRoomDataSource(requestsDatabase: RequestsDatabase): RequestsLocalDataSource =
+        RoomRequestsDataSource(requestsDatabase.requestsHistoryDao())
 
     @Provides
     fun provideBINInfoRepository(
-        remote: BINInfoRemoteDataSource,
-        local: BINInfoLocalDataSource
-    ): BINInfoRepository = BINInfoRepositoryImpl(remote, local)
+        remote: BINInfoRemoteDataSource
+    ): BINInfoRepository = BINInfoRepositoryImpl(remote)
+
+    @Provides
+    fun provideRequestsRepository(
+        local: RequestsLocalDataSource
+    ): RequestsRepository = RequestsRepositoryImpl(local)
 }
