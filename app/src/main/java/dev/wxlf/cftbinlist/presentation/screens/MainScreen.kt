@@ -34,10 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.flowlayout.FlowRow
 import dev.wxlf.cftbinlist.R
-import dev.wxlf.cftbinlist.data.entities.BINInfoEntity
-import dev.wxlf.cftbinlist.data.entities.BankEntity
-import dev.wxlf.cftbinlist.data.entities.CountryEntity
-import dev.wxlf.cftbinlist.data.entities.RequestEntity
+import dev.wxlf.cftbinlist.data.entities.*
 import dev.wxlf.cftbinlist.presentation.common.BinInfoViewState
 import dev.wxlf.cftbinlist.presentation.common.MainScreenEvent
 import dev.wxlf.cftbinlist.presentation.common.MainScreenViewState
@@ -127,6 +124,8 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
                                     bin.value = requestEntity.bin
                                     viewModel.obtainEvent(MainScreenEvent.LoadBINInfo(requestEntity.bin))
                                     bottomSheetScope.launch {
@@ -135,8 +134,7 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                                         }
                                     }
                                 }
-                                .padding(vertical = 16.dp, horizontal = 26.dp)
-                                ,
+                                .padding(vertical = 16.dp, horizontal = 26.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -206,9 +204,11 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                             fontWeight = FontWeight.SemiBold
                         )
                         CardInfo(binInfo = binInfo.value)
-                        if (binInfo.value.bank!! != BankEntity())
+                        if (binInfo.value.number != null && binInfo.value.number != NumberEntity())
+                            NumberInfo(numberInfo = binInfo.value.number!!)
+                        if (binInfo.value.bank != null && binInfo.value.bank!! != BankEntity())
                             BankInfo(bankInfo = binInfo.value.bank!!)
-                        if (binInfo.value.country != null)
+                        if (binInfo.value.country != null && binInfo.value.country != CountryEntity())
                             CountryInfo(countryInfo = binInfo.value.country!!)
                     }
                     BinInfoViewState.LoadingBINInfo -> {
@@ -327,11 +327,11 @@ fun BankInfo(bankInfo: BankEntity) {
     ) {
         Text("Банк", fontWeight = FontWeight.Bold, fontSize = 24.sp)
         if (!bankInfo.name.isNullOrEmpty())
-            Text(bankInfo.name!!, modifier = Modifier.padding(vertical = 8.dp))
+            Text(bankInfo.name!!, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 4.dp))
         if (!bankInfo.url.isNullOrEmpty())
             Row(
                 modifier = Modifier
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 4.dp)
                     .clickable {
                         uriHandler.openUri("https://${bankInfo.url!!}")
                     }
@@ -350,7 +350,7 @@ fun BankInfo(bankInfo: BankEntity) {
         if (!bankInfo.phone.isNullOrEmpty())
             Row(
                 modifier = Modifier
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 4.dp)
                     .clickable {
                         uriHandler.openUri("tel:${bankInfo.phone!!}")
                     }
@@ -364,6 +364,34 @@ fun BankInfo(bankInfo: BankEntity) {
             }
 
         if (!bankInfo.city.isNullOrEmpty())
-            Text(bankInfo.city!!, modifier = Modifier.padding(vertical = 8.dp))
+            Text(bankInfo.city!!, modifier = Modifier.padding(vertical = 4.dp))
+    }
+}
+
+@Composable
+fun NumberInfo(numberInfo: NumberEntity) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            "Карта",
+            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Row(modifier = Modifier.padding(vertical = 4.dp)) {
+            Column(modifier = Modifier.padding(end = 16.dp)) {
+                Text("Длинна номера", fontSize = 12.sp)
+                if (numberInfo.length == null)
+                    Text("--", fontWeight = FontWeight.Bold)
+                else
+                    Text("${numberInfo.length}", fontWeight = FontWeight.Bold)
+            }
+            Column {
+                Text("Алгоритм Луна", fontSize = 12.sp)
+                if (numberInfo.luhn == null)
+                    Text("--", fontWeight = FontWeight.Bold)
+                else
+                    Text(if (numberInfo.luhn!!) "Да" else "Нет", fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
