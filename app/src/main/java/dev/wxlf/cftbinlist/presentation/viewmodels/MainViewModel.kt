@@ -24,7 +24,7 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow<MainScreenViewState>(MainScreenViewState.LoadingHistory)
+        MutableStateFlow<MainScreenViewState>(MainScreenViewState.InitialScreen)
     val uiState: StateFlow<MainScreenViewState> = _uiState
 
     private val _binInfoState =
@@ -34,7 +34,6 @@ class MainViewModel @Inject constructor(
     fun obtainEvent(event: MainScreenEvent) {
         when(event) {
             MainScreenEvent.LoadHistory -> {
-                _uiState.value = MainScreenViewState.LoadingHistory
                 viewModelScope.launch {
                     val history = fetchRequestsHistoryUseCase.execute()
                     _uiState.emit(MainScreenViewState.LoadedHistory(history))
@@ -49,7 +48,6 @@ class MainViewModel @Inject constructor(
                 }
             }
             is MainScreenEvent.DeleteRequest -> {
-                _uiState.value = MainScreenViewState.LoadingHistory
                 viewModelScope.launch {
                     deleteRequestFromHistoryUseCase.execute(event.requestEntity)
                     val history = fetchRequestsHistoryUseCase.execute()
@@ -57,7 +55,6 @@ class MainViewModel @Inject constructor(
                 }
             }
             is MainScreenEvent.AddRequest -> {
-                _uiState.value = MainScreenViewState.LoadingHistory
                 viewModelScope.launch {
                     addRequestToHistoryUseCase.execute(event.requestEntity)
                     val history = fetchRequestsHistoryUseCase.execute()

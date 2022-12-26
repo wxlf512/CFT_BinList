@@ -98,15 +98,15 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                         if (!binInfoDialog.isVisible) {
                             binInfoDialog.show()
                         }
-                        viewModel.obtainEvent(
-                            MainScreenEvent.AddRequest(
-                                RequestEntity(
-                                    bin = inputBin.value,
-                                    timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
-                                )
+                    }
+                    viewModel.obtainEvent(
+                        MainScreenEvent.AddRequest(
+                            RequestEntity(
+                                bin = inputBin.value,
+                                timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
                             )
                         )
-                    }
+                    )
                 }
             })
         )
@@ -115,64 +115,58 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
             is MainScreenViewState.LoadedHistory -> {
                 history.clear()
                 history.addAll((uiState as MainScreenViewState.LoadedHistory).history.reversed())
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(history.toList()) { requestEntity ->
-                        Divider(
-                            modifier = Modifier.padding(horizontal = 26.dp)
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    keyboardController?.hide()
-                                    focusManager.clearFocus()
-                                    bin.value = requestEntity.bin
-                                    viewModel.obtainEvent(MainScreenEvent.LoadBINInfo(requestEntity.bin))
-                                    bottomSheetScope.launch {
-                                        if (!binInfoDialog.isVisible) {
-                                            binInfoDialog.show()
-                                        }
-                                    }
+            }
+            MainScreenViewState.InitialScreen -> {}
+        }
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(history.toList()) { requestEntity ->
+                Divider(
+                    modifier = Modifier.padding(horizontal = 26.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                            bin.value = requestEntity.bin
+                            viewModel.obtainEvent(MainScreenEvent.LoadBINInfo(requestEntity.bin))
+                            bottomSheetScope.launch {
+                                if (!binInfoDialog.isVisible) {
+                                    binInfoDialog.show()
                                 }
-                                .padding(vertical = 16.dp, horizontal = 26.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                requestEntity.bin,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val timestamp = Instant.parse(requestEntity.timestamp)
-                                    .atZone(ZoneId.systemDefault())
-                                Text("${timestamp.hour}:${timestamp.minute}\n${timestamp.dayOfMonth}/${timestamp.monthValue}/${timestamp.year}")
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete request",
-                                    modifier = Modifier
-                                        .padding(start = 16.dp)
-                                        .size(32.dp)
-                                        .clickable {
-                                            viewModel.obtainEvent(
-                                                MainScreenEvent.DeleteRequest(
-                                                    requestEntity
-                                                )
-                                            )
-                                        }
-                                )
                             }
                         }
-                    }
-                }
-            }
-            MainScreenViewState.LoadingHistory -> {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        .padding(vertical = 16.dp, horizontal = 26.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        requestEntity.bin,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
                     )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val timestamp = Instant.parse(requestEntity.timestamp)
+                            .atZone(ZoneId.systemDefault())
+                        Text(timestamp.format(DateTimeFormatter.ofPattern("HH:mm\ndd/MM/yyyy")))
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete request",
+                            modifier = Modifier
+                                .padding(start = 16.dp)
+                                .size(32.dp)
+                                .clickable {
+                                    viewModel.obtainEvent(
+                                        MainScreenEvent.DeleteRequest(
+                                            requestEntity
+                                        )
+                                    )
+                                }
+                        )
+                    }
                 }
             }
         }
