@@ -205,11 +205,13 @@ fun MainScreen(viewModel: MainViewModel, colorScheme: ColorScheme) {
                         if (binInfo.value.country != null && binInfo.value.country != CountryEntity())
                             CountryInfo(countryInfo = binInfo.value.country!!)
                     }
-                    BinInfoViewState.LoadingBINInfo -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .padding(16.dp)
+                    BinInfoViewState.InitialState -> {}
+                    is BinInfoViewState.ErrorState -> {
+                        Text(
+                            (binInfoState as BinInfoViewState.ErrorState).msg,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
@@ -321,7 +323,11 @@ fun BankInfo(bankInfo: BankEntity) {
     ) {
         Text("Банк", fontWeight = FontWeight.Bold, fontSize = 24.sp)
         if (!bankInfo.name.isNullOrEmpty())
-            Text(bankInfo.name!!, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 4.dp))
+            Text(
+                bankInfo.name!!,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
         if (!bankInfo.url.isNullOrEmpty())
             Row(
                 modifier = Modifier

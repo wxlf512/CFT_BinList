@@ -28,11 +28,11 @@ class MainViewModel @Inject constructor(
     val uiState: StateFlow<MainScreenViewState> = _uiState
 
     private val _binInfoState =
-        MutableStateFlow<BinInfoViewState>(BinInfoViewState.LoadingBINInfo)
+        MutableStateFlow<BinInfoViewState>(BinInfoViewState.InitialState)
     val binInfoState: StateFlow<BinInfoViewState> = _binInfoState
 
     fun obtainEvent(event: MainScreenEvent) {
-        when(event) {
+        when (event) {
             MainScreenEvent.LoadHistory -> {
                 viewModelScope.launch {
                     val history = fetchRequestsHistoryUseCase.execute()
@@ -40,11 +40,14 @@ class MainViewModel @Inject constructor(
                 }
             }
             is MainScreenEvent.LoadBINInfo -> {
-                _binInfoState.value = BinInfoViewState.LoadingBINInfo
                 val bin = event.bin.replace("[^0-9]".toRegex(), "")
                 viewModelScope.launch {
-                    val data = fetchBINInfoUseCase.execute(bin)
-                    _binInfoState.emit(BinInfoViewState.LoadedBINInfo(data))
+                    try {
+                        val data = fetchBINInfoUseCase.execute(bin)
+                        _binInfoState.emit(BinInfoViewState.LoadedBINInfo(data))
+                    } catch (e: Throwable) {
+                        _binInfoState.emit(BinInfoViewState.ErrorState(msg = e.localizedMessage.orEmpty()))
+                    }
                 }
             }
             is MainScreenEvent.DeleteRequest -> {

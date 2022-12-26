@@ -1,4 +1,4 @@
-package dev.wxlf.cftbinlist.data.repositories
+package dev.wxlf.cftbinlist.data.network.repositories
 
 import dev.wxlf.cftbinlist.data.datasources.BINInfoRemoteDataSource
 import dev.wxlf.cftbinlist.data.entities.BINInfoEntity
